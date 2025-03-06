@@ -16,6 +16,7 @@ pub trait Cache<K: Eq + Hash, V> {
     fn change_capacity(&mut self, capacity: u64);
 }
 
-
+pub mod fifo;
+pub mod lfu;
 pub mod lru;
 pub mod ttl;

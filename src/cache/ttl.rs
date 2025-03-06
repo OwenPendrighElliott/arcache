@@ -1,6 +1,6 @@
-use std::hash::Hash;
 use linked_hash_map::LinkedHashMap;
 use rand::Rng;
+use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -72,7 +72,9 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> TTLCache<
     }
 }
 
-impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, V> for TTLCache<K, V> {
+impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, V>
+    for TTLCache<K, V>
+{
     fn get(&mut self, key: &K) -> Option<V> {
         let now = Instant::now();
         let (result, expired) = {
@@ -148,19 +150,52 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, 
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_ttl_cache() {
-        let mut cache = TTLCache::new(Duration::from_secs(1), Duration::from_millis(100), Duration::from_millis(10), 2);
+        let mut cache = TTLCache::new(
+            Duration::from_secs(1),
+            Duration::from_millis(100),
+            Duration::from_millis(10),
+            2,
+        );
         cache.set(&1, 1);
         cache.set(&2, 2);
         assert_eq!(cache.get(&1), Some(1));
         thread::sleep(Duration::from_secs(2));
+        assert_eq!(cache.get(&1), None);
+        assert_eq!(cache.get(&2), None);
+    }
+
+    #[test]
+    fn test_ttl_cache_change_capacity() {
+        let mut cache = TTLCache::new(
+            Duration::from_secs(1),
+            Duration::from_millis(100),
+            Duration::from_millis(10),
+            2,
+        );
+        cache.set(&1, 1);
+        cache.set(&2, 2);
+        cache.change_capacity(1);
+        assert_eq!(cache.get(&1), None);
+        assert_eq!(cache.get(&2), Some(2));
+    }
+
+    #[test]
+    fn test_ttl_cache_clear() {
+        let mut cache = TTLCache::new(
+            Duration::from_secs(1),
+            Duration::from_millis(100),
+            Duration::from_millis(10),
+            2,
+        );
+        cache.set(&1, 1);
+        cache.set(&2, 2);
+        cache.clear();
         assert_eq!(cache.get(&1), None);
         assert_eq!(cache.get(&2), None);
     }

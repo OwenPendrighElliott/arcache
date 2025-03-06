@@ -1,30 +1,31 @@
-use crate::cache::{Cache, CacheStats};
-use linked_hash_map::LinkedHashMap;
+use std::collections::{HashMap, VecDeque};
 use std::hash::Hash;
 
-pub struct LRUCache<K: Eq + Hash, V> {
+use crate::cache::{Cache, CacheStats};
+
+pub struct FIFOCache<K: Eq + Hash, V> {
     capacity: u64,
-    key_value_map: LinkedHashMap<K, V>,
+    key_value_map: HashMap<K, V>,
+    fifo: VecDeque<K>,
     hits: u64,
     misses: u64,
 }
 
-impl<K: Eq + Hash, V> LRUCache<K, V> {
+impl<K: Eq + Hash, V> FIFOCache<K, V> {
     pub fn new(capacity: u64) -> Self {
-        let mut kv_map = LinkedHashMap::new();
-        kv_map.reserve(capacity as usize);
-        LRUCache {
+        FIFOCache {
             capacity,
-            key_value_map: kv_map,
+            key_value_map: HashMap::with_capacity(capacity as usize),
+            fifo: VecDeque::with_capacity(capacity as usize),
             hits: 0,
             misses: 0,
         }
     }
 }
 
-impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for LRUCache<K, V> {
+impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for FIFOCache<K, V> {
     fn get(&mut self, key: &K) -> Option<V> {
-        match self.key_value_map.get_refresh(key) {
+        match self.key_value_map.get(key) {
             Some(value) => {
                 self.hits += 1;
                 Some(value.clone())
@@ -37,10 +38,13 @@ impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for LRUCache<K, V> {
     }
 
     fn set(&mut self, key: &K, value: V) {
-        self.key_value_map.insert(key.clone(), value);
-        if self.key_value_map.len() as u64 > self.capacity {
-            self.key_value_map.pop_front();
+        if self.key_value_map.len() as u64 >= self.capacity {
+            if let Some(oldest_key) = self.fifo.pop_front() {
+                self.key_value_map.remove(&oldest_key);
+            }
         }
+        self.key_value_map.insert(key.clone(), value);
+        self.fifo.push_back(key.clone());
     }
 
     fn remove(&mut self, key: &K) {
@@ -49,6 +53,7 @@ impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for LRUCache<K, V> {
 
     fn clear(&mut self) {
         self.key_value_map.clear();
+        self.fifo.clear();
     }
 
     fn stats(&self) -> CacheStats {
@@ -63,7 +68,9 @@ impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for LRUCache<K, V> {
     fn change_capacity(&mut self, capacity: u64) {
         self.capacity = capacity;
         while self.key_value_map.len() as u64 > self.capacity {
-            self.key_value_map.pop_front();
+            if let Some(oldest_key) = self.fifo.pop_front() {
+                self.key_value_map.remove(&oldest_key);
+            }
         }
     }
 }
@@ -73,13 +80,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lru_cache() {
-        let mut cache = LRUCache::new(2);
+    fn test_fifo_cache() {
+        let mut cache = FIFOCache::new(2);
         cache.set(&1, 1);
         cache.set(&2, 2);
         assert_eq!(cache.get(&1), Some(1));
         cache.set(&3, 3);
-        assert_eq!(cache.get(&2), None);
+        assert_eq!(cache.get(&2), Some(2));
+        assert_eq!(cache.get(&1), None);
         cache.set(&4, 4);
         assert_eq!(cache.get(&1), None);
         assert_eq!(cache.get(&3), Some(3));
@@ -87,22 +95,22 @@ mod tests {
     }
 
     #[test]
-    fn test_lru_cache_change_capacity() {
-        let mut cache = LRUCache::new(2);
-        cache.set(&1, 1);
-        cache.set(&2, 2);
-        cache.change_capacity(1);
-        assert_eq!(cache.get(&1), None);
-        assert_eq!(cache.get(&2), Some(2));
-    }
-
-    #[test]
-    fn test_lru_cache_clear() {
-        let mut cache = LRUCache::new(2);
+    fn test_fifo_cache_clear() {
+        let mut cache = FIFOCache::new(2);
         cache.set(&1, 1);
         cache.set(&2, 2);
         cache.clear();
         assert_eq!(cache.get(&1), None);
         assert_eq!(cache.get(&2), None);
+    }
+
+    #[test]
+    fn test_fifo_cache_change_capacity() {
+        let mut cache = FIFOCache::new(2);
+        cache.set(&1, 1);
+        cache.set(&2, 2);
+        cache.change_capacity(1);
+        assert_eq!(cache.get(&1), None);
+        assert_eq!(cache.get(&2), Some(2));
     }
 }
