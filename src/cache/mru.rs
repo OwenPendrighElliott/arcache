@@ -9,7 +9,7 @@ struct MRUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     misses: u64,
 }
 
-impl <K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
+impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
     fn new(capacity: u64) -> Self {
         MRUCacheInner {
             capacity,

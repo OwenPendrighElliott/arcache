@@ -20,4 +20,5 @@ pub trait Cache<K: Eq + Hash + Clone + Sync, V>: Send + Sync {
 pub mod fifo;
 pub mod lfu;
 pub mod lru;
+pub mod mru;
 pub mod ttl;
