@@ -9,7 +9,7 @@ struct LRUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     misses: u64,
 }
 
-impl <K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCacheInner<K, V> {
+impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCacheInner<K, V> {
     fn new(capacity: u64) -> Self {
         LRUCacheInner {
             capacity,

@@ -1,7 +1,6 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
-
 pub struct CacheStats {
     pub hits: u64,
     pub misses: u64,

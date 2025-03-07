@@ -12,7 +12,7 @@ struct FIFOCacheInner<K: Eq + Hash + Send, V: Send + Sync> {
     misses: u64,
 }
 
-impl <K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
+impl<K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
     fn new(capacity: u64) -> Self {
         FIFOCacheInner {
             capacity,
