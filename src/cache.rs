@@ -9,7 +9,7 @@ pub struct CacheStats {
     pub capacity: u64,
 }
 
-pub trait Cache<K: Eq + Hash + Clone + Sync, V>: Send + Sync {
+pub trait Cache<K: Eq + Hash + Clone + Send + Sync, V: Send + Sync>: Send + Sync {
     fn get(&self, key: &K) -> Option<Arc<V>>;
     fn set(&self, key: K, value: V);
     fn remove(&self, key: &K);
