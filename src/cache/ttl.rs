@@ -76,7 +76,7 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Send + Sync + 'static> TTLCache<K
 impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cache<K, V>
     for TTLCache<K, V>
 {
-    fn get(&mut self, key: &K) -> Option<Arc<V>> {
+    fn get(&self, key: &K) -> Option<Arc<V>> {
         let now = Instant::now();
         let (result, expired) = {
             let mut inner = self.inner.lock().unwrap();
@@ -107,7 +107,7 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cac
         result
     }
 
-    fn set(&mut self, key: K, value: V) {
+    fn set(&self, key: K, value: V) {
         let mut inner = self.inner.lock().unwrap();
         if !inner.key_value_map.contains_key(&key) {
             Self::enforce_capacity(&mut inner);
@@ -122,12 +122,12 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cac
         );
     }
 
-    fn remove(&mut self, key: &K) {
+    fn remove(&self, key: &K) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.remove(key);
     }
 
-    fn clear(&mut self) {
+    fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
     }
@@ -142,7 +142,7 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cac
         }
     }
 
-    fn change_capacity(&mut self, capacity: u64) {
+    fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_ttl_cache() {
-        let mut cache = TTLCache::new(
+        let cache = TTLCache::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Duration::from_millis(10),
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_ttl_cache_change_capacity() {
-        let mut cache = TTLCache::new(
+        let cache = TTLCache::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Duration::from_millis(10),
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_ttl_cache_clear() {
-        let mut cache = TTLCache::new(
+        let cache = TTLCache::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Duration::from_millis(10),

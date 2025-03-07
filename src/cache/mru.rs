@@ -33,7 +33,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCache<K, V> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCache<K, V> {
-    fn get(&mut self, key: &K) -> Option<Arc<V>> {
+    fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get_refresh(key).cloned();
         match result {
@@ -48,21 +48,22 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCach
         }
     }
 
-    fn set(&mut self, key: K, value: V) {
+    fn set(&self, key: K, value: V) {
         let mut inner = self.inner.lock().unwrap();
         let arc_value = Arc::new(value);
-        inner.key_value_map.insert(key, arc_value);
-        if inner.key_value_map.len() as u64 > inner.capacity {
+
+        if inner.key_value_map.len() as u64 + 1 > inner.capacity {
             inner.key_value_map.pop_back();
         }
+        inner.key_value_map.insert(key, arc_value);
     }
 
-    fn remove(&mut self, key: &K) {
+    fn remove(&self, key: &K) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.remove(key);
     }
 
-    fn clear(&mut self) {
+    fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
     }
@@ -77,7 +78,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCach
         }
     }
 
-    fn change_capacity(&mut self, capacity: u64) {
+    fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
@@ -91,8 +92,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lru_cache() {
-        let mut cache = MRUCache::new(2);
+    fn test_mru_cache() {
+        let cache = MRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         assert_eq!(cache.get(&1).map(|v| *v), Some(1));
@@ -105,8 +106,8 @@ mod tests {
     }
 
     #[test]
-    fn test_lru_cache_change_capacity() {
-        let mut cache = MRUCache::new(2);
+    fn test_mru_cache_change_capacity() {
+        let cache = MRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.change_capacity(1);
@@ -115,8 +116,8 @@ mod tests {
     }
 
     #[test]
-    fn test_lru_cache_clear() {
-        let mut cache = MRUCache::new(2);
+    fn test_mru_cache_clear() {
+        let cache = MRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.clear();

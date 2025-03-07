@@ -33,7 +33,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCache<K, V> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCache<K, V> {
-    fn get(&mut self, key: &K) -> Option<Arc<V>> {
+    fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get_refresh(key).cloned();
         match result {
@@ -48,7 +48,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
         }
     }
 
-    fn set(&mut self, key: K, value: V) {
+    fn set(&self, key: K, value: V) {
         let mut inner = self.inner.lock().unwrap();
         let arc_value = Arc::new(value);
         inner.key_value_map.insert(key, arc_value);
@@ -57,12 +57,12 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
         }
     }
 
-    fn remove(&mut self, key: &K) {
+    fn remove(&self, key: &K) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.remove(key);
     }
 
-    fn clear(&mut self) {
+    fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
     }
@@ -77,7 +77,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
         }
     }
 
-    fn change_capacity(&mut self, capacity: u64) {
+    fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_lru_cache() {
-        let mut cache = LRUCache::new(2);
+        let cache = LRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         assert_eq!(cache.get(&1).map(|v| *v), Some(1));
@@ -116,11 +116,34 @@ mod tests {
 
     #[test]
     fn test_lru_cache_clear() {
-        let mut cache = LRUCache::new(2);
+        let cache = LRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.clear();
         assert_eq!(cache.get(&1).map(|v| *v), None);
         assert_eq!(cache.get(&2).map(|v| *v), None);
+    }
+
+    #[test]
+    fn test_lru_stats() {
+        let cache = LRUCache::new(2);
+        cache.set(1, 1);
+        cache.set(2, 2);
+        cache.set(3, 3);
+        assert_eq!(cache.stats().hits, 0);
+        cache.get(&1);
+        cache.get(&2);
+        assert_eq!(cache.stats().hits, 1);
+        assert_eq!(cache.stats().misses, 1);
+        cache.get(&3);
+        assert_eq!(cache.stats().hits, 2);
+        assert_eq!(cache.stats().misses, 1);
+
+        cache.set(4, 4);
+        assert_eq!(cache.stats().size, 2);
+        cache.get(&2);
+        assert_eq!(cache.stats().misses, 2);
+        cache.get(&4);
+        assert_eq!(cache.stats().hits, 3);
     }
 }

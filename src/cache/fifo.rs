@@ -37,7 +37,7 @@ impl<K: Eq + Hash + Sync + Send, V: Send + Sync> FIFOCache<K, V> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCache<K, V> {
-    fn get(&mut self, key: &K) -> Option<Arc<V>> {
+    fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get(key).cloned();
         match result {
@@ -52,7 +52,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         }
     }
 
-    fn set(&mut self, key: K, value: V) {
+    fn set(&self, key: K, value: V) {
         let mut inner = self.inner.lock().unwrap();
         if inner.key_value_map.len() as u64 >= inner.capacity {
             if let Some(oldest_key) = inner.fifo.pop_front() {
@@ -64,7 +64,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         inner.fifo.push_back(key);
     }
 
-    fn remove(&mut self, key: &K) {
+    fn remove(&self, key: &K) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.remove(key);
         if let Some(pos) = inner.fifo.iter().position(|k| k == key) {
@@ -72,7 +72,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         }
     }
 
-    fn clear(&mut self) {
+    fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
         inner.fifo.clear();
@@ -88,7 +88,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         }
     }
 
-    fn change_capacity(&mut self, capacity: u64) {
+    fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_fifo_cache() {
-        let mut cache = FIFOCache::new(2);
+        let cache = FIFOCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         assert_eq!(cache.get(&1).map(|v| *v), Some(1));
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_fifo_cache_clear() {
-        let mut cache = FIFOCache::new(2);
+        let cache = FIFOCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.clear();
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_fifo_cache_change_capacity() {
-        let mut cache = FIFOCache::new(2);
+        let cache = FIFOCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.change_capacity(1);

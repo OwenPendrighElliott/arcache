@@ -1,14 +1,28 @@
-use cachers::prelude::*;
+use cachers::{Cache, LRUCache};
+
+fn lru_fib(n: u64, cache: &mut LRUCache<u64, u64>) -> u64 {
+    if n == 0 {
+        return 0;
+    }
+    if n == 1 {
+        return 1;
+    }
+    match cache.get(&n) {
+        Some(v) => *v,
+        None => {
+            let result = lru_fib(n - 1, cache) + lru_fib(n - 2, cache);
+            cache.set(n, result);
+            result
+        }
+    }
+}
 
 fn main() {
-    let mut cache = LRUCache::new(2);
-    cache.set(1, 1);
-    cache.set(2, 2);
-    assert_eq!(cache.get(&1).map(|v| *v), Some(1));
-    cache.set(3, 3);
-    assert_eq!(cache.get(&2), None);
-    cache.set(4, 4);
-    assert_eq!(cache.get(&1), None);
-    assert_eq!(cache.get(&3).map(|v| *v), Some(3));
-    assert_eq!(cache.get(&4).map(|v| *v), Some(4));
+    let mut cache = LRUCache::new(10);
+    println!("{}", lru_fib(10, &mut cache));
+    println!("{:?}", cache.stats());
+    println!("{}", lru_fib(10, &mut cache));
+    println!("{:?}", cache.stats());
+    println!("{}", lru_fib(20, &mut cache));
+    println!("{:?}", cache.stats());
 }
