@@ -1,4 +1,6 @@
 use std::hash::Hash;
+use std::sync::Arc;
+
 
 pub struct CacheStats {
     pub hits: u64,
@@ -7,9 +9,9 @@ pub struct CacheStats {
     pub capacity: u64,
 }
 
-pub trait Cache<K: Eq + Hash, V> {
-    fn get(&mut self, key: &K) -> Option<V>;
-    fn set(&mut self, key: &K, value: V);
+pub trait Cache<K: Eq + Hash + Clone + Sync, V>: Send + Sync {
+    fn get(&mut self, key: &K) -> Option<Arc<V>>;
+    fn set(&mut self, key: K, value: V);
     fn remove(&mut self, key: &K);
     fn clear(&mut self);
     fn stats(&self) -> CacheStats;

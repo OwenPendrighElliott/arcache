@@ -2,16 +2,16 @@ use crate::cache::{Cache, CacheStats};
 use linked_hash_map::LinkedHashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Mutex};
-struct LRUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
+struct MRUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     capacity: u64,
     key_value_map: LinkedHashMap<K, Arc<V>>,
     hits: u64,
     misses: u64,
 }
 
-impl <K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCacheInner<K, V> {
+impl <K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
     fn new(capacity: u64) -> Self {
-        LRUCacheInner {
+        MRUCacheInner {
             capacity,
             key_value_map: LinkedHashMap::with_capacity(capacity as usize),
             hits: 0,
@@ -20,19 +20,19 @@ impl <K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCacheInner<K, V> {
     }
 }
 
-pub struct LRUCache<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
-    inner: Mutex<LRUCacheInner<K, V>>,
+pub struct MRUCache<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
+    inner: Mutex<MRUCacheInner<K, V>>,
 }
 
-impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCache<K, V> {
+impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCache<K, V> {
     pub fn new(capacity: u64) -> Self {
-        LRUCache {
-            inner: Mutex::new(LRUCacheInner::new(capacity)),
+        MRUCache {
+            inner: Mutex::new(MRUCacheInner::new(capacity)),
         }
     }
 }
 
-impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCache<K, V> {
+impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCache<K, V> {
     fn get(&mut self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get_refresh(key).cloned();
@@ -53,7 +53,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
         let arc_value = Arc::new(value);
         inner.key_value_map.insert(key, arc_value);
         if inner.key_value_map.len() as u64 > inner.capacity {
-            inner.key_value_map.pop_front();
+            inner.key_value_map.pop_back();
         }
     }
 
@@ -81,7 +81,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
-            inner.key_value_map.pop_front();
+            inner.key_value_map.pop_back();
         }
     }
 }
@@ -92,12 +92,12 @@ mod tests {
 
     #[test]
     fn test_lru_cache() {
-        let mut cache = LRUCache::new(2);
+        let mut cache = MRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         assert_eq!(cache.get(&1).map(|v| *v), Some(1));
         cache.set(3, 3);
-        assert_eq!(cache.get(&2).map(|v| *v), None);
+        assert_eq!(cache.get(&2).map(|v| *v), Some(2));
         cache.set(4, 4);
         assert_eq!(cache.get(&1).map(|v| *v), None);
         assert_eq!(cache.get(&3).map(|v| *v), Some(3));
@@ -106,17 +106,17 @@ mod tests {
 
     #[test]
     fn test_lru_cache_change_capacity() {
-        let mut cache = LRUCache::new(2);
+        let mut cache = MRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.change_capacity(1);
-        assert_eq!(cache.get(&1).map(|v| *v), None);
-        assert_eq!(cache.get(&2).map(|v| *v), Some(2));
+        assert_eq!(cache.get(&1).map(|v| *v), Some(1));
+        assert_eq!(cache.get(&2).map(|v| *v), None);
     }
 
     #[test]
     fn test_lru_cache_clear() {
-        let mut cache = LRUCache::new(2);
+        let mut cache = MRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.clear();

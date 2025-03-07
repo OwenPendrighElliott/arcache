@@ -1,19 +1,20 @@
 use std::collections::{HashMap, VecDeque};
 use std::hash::Hash;
+use std::sync::{Arc, Mutex};
 
 use crate::cache::{Cache, CacheStats};
 
-pub struct FIFOCache<K: Eq + Hash, V> {
+struct FIFOCacheInner<K: Eq + Hash + Send, V: Send + Sync> {
     capacity: u64,
-    key_value_map: HashMap<K, V>,
+    key_value_map: HashMap<K, Arc<V>>,
     fifo: VecDeque<K>,
     hits: u64,
     misses: u64,
 }
 
-impl<K: Eq + Hash, V> FIFOCache<K, V> {
-    pub fn new(capacity: u64) -> Self {
-        FIFOCache {
+impl <K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
+    fn new(capacity: u64) -> Self {
+        FIFOCacheInner {
             capacity,
             key_value_map: HashMap::with_capacity(capacity as usize),
             fifo: VecDeque::with_capacity(capacity as usize),
@@ -23,53 +24,76 @@ impl<K: Eq + Hash, V> FIFOCache<K, V> {
     }
 }
 
-impl<K: Eq + Hash + Clone, V: Clone> Cache<K, V> for FIFOCache<K, V> {
-    fn get(&mut self, key: &K) -> Option<V> {
-        match self.key_value_map.get(key) {
+pub struct FIFOCache<K: Eq + Hash + Send, V: Send + Sync> {
+    inner: Mutex<FIFOCacheInner<K, V>>,
+}
+
+impl<K: Eq + Hash + Sync + Send, V: Send + Sync> FIFOCache<K, V> {
+    pub fn new(capacity: u64) -> Self {
+        FIFOCache {
+            inner: Mutex::new(FIFOCacheInner::new(capacity)),
+        }
+    }
+}
+
+impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCache<K, V> {
+    fn get(&mut self, key: &K) -> Option<Arc<V>> {
+        let mut inner = self.inner.lock().unwrap();
+        let result = inner.key_value_map.get(key).cloned();
+        match result {
             Some(value) => {
-                self.hits += 1;
-                Some(value.clone())
+                inner.hits += 1;
+                Some(value)
             }
             None => {
-                self.misses += 1;
+                inner.misses += 1;
                 None
             }
         }
     }
 
-    fn set(&mut self, key: &K, value: V) {
-        if self.key_value_map.len() as u64 >= self.capacity {
-            if let Some(oldest_key) = self.fifo.pop_front() {
-                self.key_value_map.remove(&oldest_key);
+    fn set(&mut self, key: K, value: V) {
+        let mut inner = self.inner.lock().unwrap();
+        if inner.key_value_map.len() as u64 >= inner.capacity {
+            if let Some(oldest_key) = inner.fifo.pop_front() {
+                inner.key_value_map.remove(&oldest_key);
             }
         }
-        self.key_value_map.insert(key.clone(), value);
-        self.fifo.push_back(key.clone());
+        let arc_value = Arc::new(value);
+        inner.key_value_map.insert(key.clone(), arc_value);
+        inner.fifo.push_back(key);
     }
 
     fn remove(&mut self, key: &K) {
-        self.key_value_map.remove(key);
+        let mut inner = self.inner.lock().unwrap();
+        inner.key_value_map.remove(key);
+        if let Some(pos) = inner.fifo.iter().position(|k| k == key) {
+            inner.fifo.remove(pos);
+        }
     }
 
     fn clear(&mut self) {
-        self.key_value_map.clear();
-        self.fifo.clear();
+        let mut inner = self.inner.lock().unwrap();
+        inner.key_value_map.clear();
+        inner.fifo.clear();
     }
 
     fn stats(&self) -> CacheStats {
+        let inner = self.inner.lock().unwrap();
         CacheStats {
-            hits: self.hits,
-            misses: self.misses,
-            size: self.key_value_map.len() as u64,
-            capacity: self.capacity,
+            hits: inner.hits,
+            misses: inner.misses,
+            size: inner.key_value_map.len() as u64,
+            capacity: inner.capacity,
         }
     }
 
     fn change_capacity(&mut self, capacity: u64) {
-        self.capacity = capacity;
-        while self.key_value_map.len() as u64 > self.capacity {
-            if let Some(oldest_key) = self.fifo.pop_front() {
-                self.key_value_map.remove(&oldest_key);
+        let mut inner = self.inner.lock().unwrap();
+        inner.capacity = capacity;
+        while inner.key_value_map.len() as u64 > inner.capacity {
+            if let Some(oldest_key) = inner.fifo.pop_front() {
+                inner.key_value_map.remove(&oldest_key);
             }
         }
     }
@@ -82,23 +106,23 @@ mod tests {
     #[test]
     fn test_fifo_cache() {
         let mut cache = FIFOCache::new(2);
-        cache.set(&1, 1);
-        cache.set(&2, 2);
-        assert_eq!(cache.get(&1), Some(1));
-        cache.set(&3, 3);
-        assert_eq!(cache.get(&2), Some(2));
+        cache.set(1, 1);
+        cache.set(2, 2);
+        assert_eq!(cache.get(&1).map(|v| *v), Some(1));
+        cache.set(3, 3);
+        assert_eq!(cache.get(&2).map(|v| *v), Some(2));
         assert_eq!(cache.get(&1), None);
-        cache.set(&4, 4);
+        cache.set(4, 4);
         assert_eq!(cache.get(&1), None);
-        assert_eq!(cache.get(&3), Some(3));
-        assert_eq!(cache.get(&4), Some(4));
+        assert_eq!(cache.get(&3).map(|v| *v), Some(3));
+        assert_eq!(cache.get(&4).map(|v| *v), Some(4));
     }
 
     #[test]
     fn test_fifo_cache_clear() {
         let mut cache = FIFOCache::new(2);
-        cache.set(&1, 1);
-        cache.set(&2, 2);
+        cache.set(1, 1);
+        cache.set(2, 2);
         cache.clear();
         assert_eq!(cache.get(&1), None);
         assert_eq!(cache.get(&2), None);
@@ -107,10 +131,10 @@ mod tests {
     #[test]
     fn test_fifo_cache_change_capacity() {
         let mut cache = FIFOCache::new(2);
-        cache.set(&1, 1);
-        cache.set(&2, 2);
+        cache.set(1, 1);
+        cache.set(2, 2);
         cache.change_capacity(1);
         assert_eq!(cache.get(&1), None);
-        assert_eq!(cache.get(&2), Some(2));
+        assert_eq!(cache.get(&2).map(|v| *v), Some(2));
     }
 }

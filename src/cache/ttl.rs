@@ -9,7 +9,7 @@ use crate::cache::{Cache, CacheStats};
 
 #[derive(Clone)]
 struct DataWithLifetime<V> {
-    data: V,
+    data: Arc<V>,
     expiry: Instant,
 }
 
@@ -23,11 +23,11 @@ struct TTLCacheInner<K, V> {
     misses: u64,
 }
 
-pub struct TTLCache<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> {
+pub struct TTLCache<K: Eq + Hash + Clone + Send + 'static, V: Send + Sync + 'static> {
     inner: Arc<Mutex<TTLCacheInner<K, V>>>,
 }
 
-impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> TTLCache<K, V> {
+impl<K: Eq + Hash + Clone + Send + 'static, V: Send + Sync + 'static> TTLCache<K, V> {
     pub fn new(ttl: Duration, check_interval: Duration, jitter: Duration, capacity: u64) -> Self {
         let inner = Arc::new(Mutex::new(TTLCacheInner {
             ttl,
@@ -41,10 +41,11 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> TTLCache<
 
         let inner_clone = Arc::clone(&inner);
 
-        // thread for background evictions of expired items
+        // Background thread for evicting expired items.
         thread::spawn(move || loop {
             let sleep_duration = {
                 let cache = inner_clone.lock().unwrap();
+                // Generate a random divisor in [1, 100)
                 let div_factor: u32 = rand::rng().random_range(1..100);
                 cache.check_interval + cache.jitter.checked_div(div_factor).unwrap_or_default()
             };
@@ -72,10 +73,10 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> TTLCache<
     }
 }
 
-impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, V>
+impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cache<K, V>
     for TTLCache<K, V>
 {
-    fn get(&mut self, key: &K) -> Option<V> {
+    fn get(&mut self, key: &K) -> Option<Arc<V>> {
         let now = Instant::now();
         let (result, expired) = {
             let mut inner = self.inner.lock().unwrap();
@@ -83,6 +84,7 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, 
             if let Some(entry) = inner.key_value_map.get_refresh(key) {
                 if entry.expiry > now {
                     entry.expiry = now + ttl;
+                    // Clone the Arc; cloning is cheap.
                     (Some(entry.data.clone()), false)
                 } else {
                     (None, true)
@@ -92,6 +94,7 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, 
             }
         };
 
+        // Update stats in a separate lock block.
         let mut inner = self.inner.lock().unwrap();
         if result.is_some() {
             inner.hits += 1;
@@ -104,16 +107,16 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, 
         result
     }
 
-    fn set(&mut self, key: &K, value: V) {
+    fn set(&mut self, key: K, value: V) {
         let mut inner = self.inner.lock().unwrap();
-        if !inner.key_value_map.contains_key(key) {
+        if !inner.key_value_map.contains_key(&key) {
             Self::enforce_capacity(&mut inner);
         }
         let expiry = Instant::now() + inner.ttl;
         inner.key_value_map.insert(
-            key.clone(),
+            key,
             DataWithLifetime {
-                data: value,
+                data: Arc::new(value),
                 expiry,
             },
         );
@@ -153,6 +156,8 @@ impl<K: Eq + Hash + Clone + Send + 'static, V: Clone + Send + 'static> Cache<K, 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn test_ttl_cache() {
@@ -162,9 +167,9 @@ mod tests {
             Duration::from_millis(10),
             2,
         );
-        cache.set(&1, 1);
-        cache.set(&2, 2);
-        assert_eq!(cache.get(&1), Some(1));
+        cache.set(1, 1);
+        cache.set(2, 2);
+        assert_eq!(cache.get(&1).map(|v| *v), Some(1));
         thread::sleep(Duration::from_secs(2));
         assert_eq!(cache.get(&1), None);
         assert_eq!(cache.get(&2), None);
@@ -178,11 +183,12 @@ mod tests {
             Duration::from_millis(10),
             2,
         );
-        cache.set(&1, 1);
-        cache.set(&2, 2);
+        cache.set(1, 1);
+        cache.set(2, 2);
         cache.change_capacity(1);
+        // Depending on insertion order, one key is evicted.
         assert_eq!(cache.get(&1), None);
-        assert_eq!(cache.get(&2), Some(2));
+        assert_eq!(cache.get(&2).map(|v| *v), Some(2));
     }
 
     #[test]
@@ -193,8 +199,8 @@ mod tests {
             Duration::from_millis(10),
             2,
         );
-        cache.set(&1, 1);
-        cache.set(&2, 2);
+        cache.set(1, 1);
+        cache.set(2, 2);
         cache.clear();
         assert_eq!(cache.get(&1), None);
         assert_eq!(cache.get(&2), None);
