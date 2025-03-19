@@ -7,18 +7,18 @@ use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone)]
 struct UserData {
-    id: String,
-    name: String,
-    email: String,
+    _id: String,
+    _name: String,
+    _email: String,
 }
 
 /// Simulates fetching user data from a database.
 fn fetch_user_data(user_id: &str) -> UserData {
     thread::sleep(Duration::from_millis(300)); // Simulate network delay
     UserData {
-        id: user_id.to_string(),
-        name: format!("User {}", user_id),
-        email: format!("user{}@example.com", user_id),
+        _id: user_id.to_string(),
+        _name: format!("User {}", user_id),
+        _email: format!("user{}@example.com", user_id),
     }
 }
 

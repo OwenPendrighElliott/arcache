@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_lru_cache_change_capacity() {
-        let mut cache = LRUCache::new(2);
+        let cache = LRUCache::new(2);
         cache.set(1, 1);
         cache.set(2, 2);
         cache.change_capacity(1);
