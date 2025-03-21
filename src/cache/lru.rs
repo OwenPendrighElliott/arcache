@@ -48,18 +48,19 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
         }
     }
 
-    fn set(&self, key: K, value: V) {
+    fn set(&self, key: K, value: V) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let arc_value = Arc::new(value);
-        inner.key_value_map.insert(key, arc_value);
+        let result = inner.key_value_map.insert(key, arc_value);
         if inner.key_value_map.len() as u64 > inner.capacity {
             inner.key_value_map.pop_front();
         }
+        result
     }
 
-    fn remove(&self, key: &K) {
+    fn remove(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
-        inner.key_value_map.remove(key);
+        inner.key_value_map.remove(key)
     }
 
     fn clear(&self) {

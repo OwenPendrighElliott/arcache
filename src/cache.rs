@@ -11,14 +11,15 @@ pub struct CacheStats {
 
 pub trait Cache<K: Eq + Hash + Clone + Send + Sync, V: Send + Sync>: Send + Sync {
     fn get(&self, key: &K) -> Option<Arc<V>>;
-    fn set(&self, key: K, value: V);
-    fn remove(&self, key: &K);
+    fn set(&self, key: K, value: V) -> Option<Arc<V>>;
+    fn remove(&self, key: &K) -> Option<Arc<V>>;
     fn clear(&self);
     fn stats(&self) -> CacheStats;
     fn change_capacity(&self, capacity: u64);
 }
 
 pub mod fifo;
+pub mod lfu;
 pub mod lru;
 pub mod mru;
 pub mod ttl;

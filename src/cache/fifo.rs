@@ -52,7 +52,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         }
     }
 
-    fn set(&self, key: K, value: V) {
+    fn set(&self, key: K, value: V) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         if inner.key_value_map.len() as u64 >= inner.capacity {
             if let Some(oldest_key) = inner.fifo.pop_front() {
@@ -60,16 +60,18 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
             }
         }
         let arc_value = Arc::new(value);
-        inner.key_value_map.insert(key.clone(), arc_value);
+        let result = inner.key_value_map.insert(key.clone(), arc_value);
         inner.fifo.push_back(key);
+        result
     }
 
-    fn remove(&self, key: &K) {
+    fn remove(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
-        inner.key_value_map.remove(key);
+        let result = inner.key_value_map.remove(key);
         if let Some(pos) = inner.fifo.iter().position(|k| k == key) {
             inner.fifo.remove(pos);
         }
+        result
     }
 
     fn clear(&self) {

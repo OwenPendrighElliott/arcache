@@ -107,24 +107,27 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cac
         result
     }
 
-    fn set(&self, key: K, value: V) {
+    fn set(&self, key: K, value: V) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         if !inner.key_value_map.contains_key(&key) {
             Self::enforce_capacity(&mut inner);
         }
         let expiry = Instant::now() + inner.ttl;
-        inner.key_value_map.insert(
-            key,
-            DataWithLifetime {
-                data: Arc::new(value),
-                expiry,
-            },
-        );
+        inner
+            .key_value_map
+            .insert(
+                key,
+                DataWithLifetime {
+                    data: Arc::new(value),
+                    expiry,
+                },
+            )
+            .map(|entry| entry.data)
     }
 
-    fn remove(&self, key: &K) {
+    fn remove(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
-        inner.key_value_map.remove(key);
+        inner.key_value_map.remove(key).map(|entry| entry.data)
     }
 
     fn clear(&self) {
