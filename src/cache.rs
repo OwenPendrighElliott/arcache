@@ -1,6 +1,7 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
+/// CacheStats contains cache statistics
 #[derive(Debug, Clone)]
 pub struct CacheStats {
     pub hits: u64,
@@ -9,6 +10,7 @@ pub struct CacheStats {
     pub capacity: u64,
 }
 
+/// Cache trait defines the methods that a cache should implement and provides a shared interface for different cache implementations
 pub trait Cache<K: Eq + Hash + Clone + Send + Sync, V: Send + Sync>: Send + Sync {
     fn get(&self, key: &K) -> Option<Arc<V>>;
     fn set(&self, key: K, value: V) -> Option<Arc<V>>;

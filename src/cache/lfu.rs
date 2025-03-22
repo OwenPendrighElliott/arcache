@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 
+/// The inner data structure for the LFUCache.
 struct LFUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     capacity: u64,
     key_value_map: HashMap<K, Arc<V>>,
@@ -15,6 +16,7 @@ struct LFUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
+    /// Create a new LFUCacheInner with the given capacity, internally capacity is reserved for the necessary data structures.
     fn new(capacity: u64) -> Self {
         LFUCacheInner {
             capacity: capacity,
@@ -27,6 +29,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
         }
     }
 
+    /// Increase the frequency of the given key.
     fn increase_freq(&mut self, key: &K) {
         let freq = *self.counter.get(key).unwrap_or(&0);
         *self.counter.entry(key.clone()).or_default() += 1;
@@ -44,6 +47,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
             .insert(key.clone());
     }
 
+    /// Remove the least frequent item from the cache.
     fn remove_least_freq(&mut self) {
         if let Some(bucket) = self.freq_map.get_mut(&self.min_freq) {
             if let Some(key) = bucket.pop_front() {
@@ -57,11 +61,36 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
     }
 }
 
+/// LFUCache is a cache that uses the Least Frequently Used (LFU) algorithm to evict items.
+///
+/// When the cache is full, the item with the lowest frequency of access is evicted.
+///
+/// All mutability is handled internally with a Mutex, so the cache can be shared between threads. Values are returned as Arcs to allow for shared ownership.
+///
+/// Example:
+/// ```
+/// use cachers::{Cache, LFUCache};
+///
+/// fn main() {
+///     let cache = LFUCache::<&str, String>::new(10);
+///     
+///     let original_value = cache.set("key", "value".to_string());
+///
+///     assert!(original_value.is_none());
+///     
+///     let value = cache.get(&"key");
+///
+///     assert!(value.is_some());
+///     assert_eq!(*value.unwrap(), "value".to_string());
+///     println!("{:?}", cache.stats());
+/// }
+/// ```
 pub struct LFUCache<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     inner: Mutex<LFUCacheInner<K, V>>,
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCache<K, V> {
+    /// Create a new LFUCache with the given capacity.
     pub fn new(capacity: u64) -> Self {
         LFUCache {
             inner: Mutex::new(LFUCacheInner::new(capacity)),
@@ -70,6 +99,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCache<K, V> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCache<K, V> {
+    /// Get a value from the cache.
     fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get(key).cloned();
@@ -87,6 +117,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         }
     }
 
+    /// Set a value in the cache.
     fn set(&self, key: K, value: V) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let arc_value = Arc::new(value);
@@ -110,6 +141,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         }
     }
 
+    /// Remove a value from the cache.
     fn remove(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
 
@@ -121,6 +153,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         result
     }
 
+    /// Clear the cache.
     fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
@@ -128,6 +161,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         inner.counter.clear();
     }
 
+    /// Get cache statistics.
     fn stats(&self) -> CacheStats {
         let inner = self.inner.lock().unwrap();
         CacheStats {
@@ -138,6 +172,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         }
     }
 
+    /// Change the capacity of the cache, if the new capacity is smaller than the current size, the least frequently used items are removed.
     fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;
@@ -162,7 +197,7 @@ mod tests {
         assert_eq!(cache.get(&1).map(|v| *v), Some(1));
         assert_eq!(cache.get(&3).map(|v| *v), Some(3));
         cache.set(4, 4);
-        assert_eq!(cache.get(&1), None);
+        assert_eq!(cache.get(&2), None);
     }
 
     #[test]
@@ -171,8 +206,8 @@ mod tests {
         cache.set(1, 1);
         cache.set(2, 2);
         cache.change_capacity(1);
-        assert_eq!(cache.get(&1).map(|v| *v), Some(1));
-        assert_eq!(cache.get(&2), None);
+        assert_eq!(cache.get(&2).map(|v| *v), Some(2));
+        assert_eq!(cache.get(&1), None);
     }
 
     #[test]

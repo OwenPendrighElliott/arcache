@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::cache::{Cache, CacheStats};
 
+/// FIFOCacheInner contains the inner data structure for the FIFOCache.
 struct FIFOCacheInner<K: Eq + Hash + Send, V: Send + Sync> {
     capacity: u64,
     key_value_map: HashMap<K, Arc<V>>,
@@ -13,6 +14,7 @@ struct FIFOCacheInner<K: Eq + Hash + Send, V: Send + Sync> {
 }
 
 impl<K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
+    /// Create a new FIFOCacheInner with the given capacity, internally capacity is reserved for the necessary data structures.
     fn new(capacity: u64) -> Self {
         FIFOCacheInner {
             capacity,
@@ -24,11 +26,36 @@ impl<K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
     }
 }
 
+/// FIFOCache is a first-in-first-out cache implementation.
+///
+/// When the cache is full, the oldest item is removed to make space for the new item.
+///
+/// All mutability is handled internally with a Mutex, so the cache can be shared between threads. Values are returned as Arcs to allow for shared ownership.
+///
+/// Example:
+/// ```
+/// use cachers::{Cache, FIFOCache};
+///
+/// fn main() {
+///     let cache = FIFOCache::<&str, String>::new(10);
+///     
+///     let original_value = cache.set("key", "value".to_string());
+///
+///     assert!(original_value.is_none());
+///     
+///     let value = cache.get(&"key");
+///
+///     assert!(value.is_some());
+///     assert_eq!(*value.unwrap(), "value".to_string());
+///     println!("{:?}", cache.stats());
+/// }
+/// ```
 pub struct FIFOCache<K: Eq + Hash + Send, V: Send + Sync> {
     inner: Mutex<FIFOCacheInner<K, V>>,
 }
 
 impl<K: Eq + Hash + Sync + Send, V: Send + Sync> FIFOCache<K, V> {
+    /// Create a new FIFOCache with the given capacity.
     pub fn new(capacity: u64) -> Self {
         FIFOCache {
             inner: Mutex::new(FIFOCacheInner::new(capacity)),
@@ -37,6 +64,7 @@ impl<K: Eq + Hash + Sync + Send, V: Send + Sync> FIFOCache<K, V> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCache<K, V> {
+    /// Get a value from the cache.
     fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get(key).cloned();
@@ -52,6 +80,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         }
     }
 
+    /// Set a value in the cache.
     fn set(&self, key: K, value: V) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         if inner.key_value_map.len() as u64 >= inner.capacity {
@@ -65,6 +94,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         result
     }
 
+    /// Remove a value from the cache.
     fn remove(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.remove(key);
@@ -74,12 +104,14 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         result
     }
 
+    /// Clear the cache.
     fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
         inner.fifo.clear();
     }
 
+    /// Get cache statistics.
     fn stats(&self) -> CacheStats {
         let inner = self.inner.lock().unwrap();
         CacheStats {
@@ -90,6 +122,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for FIFOCac
         }
     }
 
+    /// Change the capacity of the cache, if the new capacity is smaller than the current size, the oldest items are removed.
     fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;

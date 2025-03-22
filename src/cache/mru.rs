@@ -2,6 +2,8 @@ use crate::cache::{Cache, CacheStats};
 use linked_hash_map::LinkedHashMap;
 use std::hash::Hash;
 use std::sync::{Arc, Mutex};
+
+/// The inner data structure for the MRUCache.
 struct MRUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     capacity: u64,
     key_value_map: LinkedHashMap<K, Arc<V>>,
@@ -10,6 +12,7 @@ struct MRUCacheInner<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
+    /// Create a new MRUCacheInner with the given capacity, internally capacity is reserved for the necessary data structures.
     fn new(capacity: u64) -> Self {
         MRUCacheInner {
             capacity,
@@ -20,11 +23,36 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
     }
 }
 
+/// MRUCache is a cache that uses the Most Recently Used (MRU) algorithm to evict items.
+///
+/// When the cache is full, the item with the most recent access is removed to make space for the new item. This is the opposite of the LRU cache.
+///
+/// All mutability is handled internally with a Mutex, so the cache can be shared between threads. Values are returned as Arcs to allow for shared ownership.
+///
+/// Example:
+/// ```
+/// use cachers::{Cache, MRUCache};
+///
+/// fn main() {
+///     let cache = MRUCache::<&str, String>::new(10);
+///     
+///     let original_value = cache.set("key", "value".to_string());
+///
+///     assert!(original_value.is_none());
+///     
+///     let value = cache.get(&"key");
+///
+///     assert!(value.is_some());
+///     assert_eq!(*value.unwrap(), "value".to_string());
+///     println!("{:?}", cache.stats());
+/// }
+/// ```
 pub struct MRUCache<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     inner: Mutex<MRUCacheInner<K, V>>,
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCache<K, V> {
+    /// Create a new MRUCache with the given capacity.
     pub fn new(capacity: u64) -> Self {
         MRUCache {
             inner: Mutex::new(MRUCacheInner::new(capacity)),
@@ -33,6 +61,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCache<K, V> {
 }
 
 impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCache<K, V> {
+    /// Get a value from the cache.
     fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get_refresh(key).cloned();
@@ -48,6 +77,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCach
         }
     }
 
+    /// Set a value in the cache.
     fn set(&self, key: K, value: V) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let arc_value = Arc::new(value);
@@ -58,16 +88,19 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCach
         inner.key_value_map.insert(key, arc_value)
     }
 
+    /// Remove a value from the cache.
     fn remove(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.remove(key)
     }
 
+    /// Clear the cache, removing all items.
     fn clear(&self) {
         let mut inner = self.inner.lock().unwrap();
         inner.key_value_map.clear();
     }
 
+    /// Get the cache statistics.
     fn stats(&self) -> CacheStats {
         let inner = self.inner.lock().unwrap();
         CacheStats {
@@ -78,6 +111,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCach
         }
     }
 
+    /// Change the capacity of the cache, if the new capacity is less than the current capacity, the cache will evict the most recently used items until the size equals the new capacity.
     fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
         inner.capacity = capacity;

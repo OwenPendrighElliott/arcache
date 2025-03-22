@@ -1,7 +1,7 @@
 use cachers::{Cache, LRUCache};
 use std::time::Instant;
 
-/// Fibonacci with LRU caching
+// Fibonacci with LRU caching
 fn lru_fib(n: u64, cache: &mut LRUCache<u64, u64>) -> u64 {
     if n == 0 {
         return 0;
@@ -19,7 +19,7 @@ fn lru_fib(n: u64, cache: &mut LRUCache<u64, u64>) -> u64 {
     }
 }
 
-/// Fibonacci without caching (naive recursion)
+// Fibonacci without caching (naive recursion)
 fn naive_fib(n: u64) -> u64 {
     if n == 0 {
         return 0;
