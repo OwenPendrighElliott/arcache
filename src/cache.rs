@@ -24,4 +24,5 @@ pub mod fifo;
 pub mod lfu;
 pub mod lru;
 pub mod mru;
+pub mod random_replacement;
 pub mod ttl;
