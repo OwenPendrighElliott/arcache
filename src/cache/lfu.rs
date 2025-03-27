@@ -22,7 +22,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
             capacity: capacity,
             key_value_map: HashMap::with_capacity(capacity as usize),
             counter: HashMap::with_capacity(capacity as usize),
-            freq_map: HashMap::with_capacity(capacity as usize),
+            freq_map: HashMap::new(),
             hits: 0,
             misses: 0,
             min_freq: 0,
@@ -175,9 +175,16 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
     /// Change the capacity of the cache, if the new capacity is smaller than the current size, the least frequently used items are removed.
     fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
+        let old_capacity = inner.capacity;
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
             inner.remove_least_freq();
+        }
+
+        if old_capacity < inner.capacity {
+            let additional = (inner.capacity - old_capacity) as usize;
+            inner.key_value_map.reserve(additional);
+            inner.counter.reserve(additional);
         }
     }
 }

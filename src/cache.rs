@@ -22,6 +22,7 @@ pub trait Cache<K: Eq + Hash + Clone + Send + Sync, V: Send + Sync>: Send + Sync
 
 pub mod fifo;
 pub mod lfu;
+pub mod lifo;
 pub mod lru;
 pub mod mru;
 pub mod random_replacement;

@@ -192,11 +192,18 @@ impl<K: Eq + Hash + Clone + Send + Sync + 'static, V: Send + Sync + 'static> Cac
     /// Change the capacity of the cache, if the new capacity is smaller than the current size, the oldest items are removed. Because the TTL is the same for all items this is identical as the ones which expire soonest.
     fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
+        let old_capacity = inner.capacity;
         inner.capacity = capacity;
+
         while inner.key_value_map.len() as u64 > inner.capacity {
             if let Some(key) = inner.key_value_map.keys().next().cloned() {
                 inner.key_value_map.remove(&key);
             }
+        }
+
+        if capacity > old_capacity {
+            let additional = (capacity - old_capacity) as usize;
+            inner.key_value_map.reserve(additional);
         }
     }
 }

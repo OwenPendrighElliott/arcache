@@ -114,9 +114,15 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LRUCach
     /// Change the capacity of the cache, if the new capacity is smaller than the current size, the least recently accessed items are removed
     fn change_capacity(&self, capacity: u64) {
         let mut inner = self.inner.lock().unwrap();
+        let old_capacity = inner.capacity;
         inner.capacity = capacity;
         while inner.key_value_map.len() as u64 > inner.capacity {
             inner.key_value_map.pop_front();
+        }
+
+        if inner.capacity > old_capacity {
+            let additional = (inner.capacity - old_capacity) as usize;
+            inner.key_value_map.reserve(additional);
         }
     }
 }
