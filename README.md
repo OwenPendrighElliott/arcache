@@ -22,6 +22,30 @@ fn main() {
 }
 ```
 
+The `Cache` trait lets you write functions with generic signatures and swap cache implementations, this is useful if you want to uses multiple cache types with the same code.
+
+```rust
+use cachers::{Cache, LFUCache, LRUCache};
+use std::{hash::Hash, sync::Arc};
+
+fn do_something<C>(mut cache: C)
+where
+    C: Cache<&'static str, String>,
+{
+    cache.set("hello", "world".to_string());
+     if let Some(val) = cache.get(&"hello") {
+        println!("Got: {}", val);
+    }
+}
+
+fn main() {
+    let lru_cache = LRUCache::<&'static str, String>::new(2);
+    do_something(lru_cache);
+    let lfu_cache = LFUCache::<&'static str, String>::new(2);
+    do_something(lfu_cache);
+}
+```
+
 ## Implemented caches
 
 + `LRUCache`
