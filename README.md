@@ -28,7 +28,7 @@ The `Cache` trait lets you write functions with generic signatures and swap cach
 use cachers::{Cache, LFUCache, LRUCache};
 use std::{hash::Hash, sync::Arc};
 
-fn do_something<C>(mut cache: C)
+fn do_something<C>(cache: C)
 where
     C: Cache<&'static str, String>,
 {

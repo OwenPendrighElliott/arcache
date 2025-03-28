@@ -18,7 +18,7 @@ pub struct CacheStats {
 /// use cachers::{Cache, LFUCache, LRUCache};
 /// use std::{hash::Hash, sync::Arc};
 ///
-/// fn do_something<C>(mut cache: C)
+/// fn do_something<C>(cache: C)
 /// where
 ///     C: Cache<&'static str, String>,
 /// {
