@@ -7,3 +7,15 @@ edition = "2021"
 linked-hash-map = "0.5.6"
 linked_hash_set = "0.1.5"
 rand = "0.9.0"
+
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "lru_bench"
+harness = false
+
+[[bench]]
+name = "generic_bench"
+harness = false
