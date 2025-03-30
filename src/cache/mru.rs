@@ -65,16 +65,13 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for MRUCach
     fn get(&self, key: &K) -> Option<Arc<V>> {
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get_refresh(key).cloned();
-        match result {
-            Some(value) => {
-                inner.hits += 1;
-                Some(value)
-            }
-            None => {
-                inner.misses += 1;
-                None
-            }
+
+        if result.is_some() {
+            inner.hits += 1;
+        } else {
+            inner.misses += 1;
         }
+        result
     }
 
     /// Set a value in the cache.

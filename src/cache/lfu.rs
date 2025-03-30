@@ -104,17 +104,13 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         let mut inner = self.inner.lock().unwrap();
         let result = inner.key_value_map.get(key).cloned();
 
-        match result {
-            Some(value) => {
-                inner.hits += 1;
-                inner.increase_freq(key);
-                Some(value)
-            }
-            None => {
-                inner.misses += 1;
-                None
-            }
+        if result.is_some() {
+            inner.hits += 1;
+            inner.increase_freq(key);
+        } else {
+            inner.misses += 1;
         }
+        result
     }
 
     /// Set a value in the cache.
@@ -122,23 +118,20 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         let mut inner = self.inner.lock().unwrap();
         let arc_value = Arc::new(value);
         let existing_value = inner.key_value_map.get(&key).cloned();
-        match existing_value {
-            Some(existing_value) => {
-                inner.key_value_map.insert(key.clone(), arc_value);
-                inner.increase_freq(&key);
-                Some(existing_value.clone())
+
+        if existing_value.is_some() {
+            inner.key_value_map.insert(key.clone(), arc_value);
+            inner.increase_freq(&key);
+        } else {
+            if inner.key_value_map.len() as u64 >= inner.capacity {
+                inner.remove_least_freq();
             }
-            None => {
-                if inner.key_value_map.len() >= inner.capacity as usize {
-                    inner.remove_least_freq();
-                }
-                inner.key_value_map.insert(key.clone(), arc_value);
-                *inner.counter.entry(key.clone()).or_default() += 1;
-                inner.freq_map.entry(1).or_default().insert(key);
-                inner.min_freq = 1;
-                None
-            }
+            inner.key_value_map.insert(key.clone(), arc_value);
+            *inner.counter.entry(key.clone()).or_default() += 1;
+            inner.freq_map.entry(1).or_default().insert(key);
+            inner.min_freq = 1;
         }
+        existing_value
     }
 
     /// Remove a value from the cache.
@@ -146,9 +139,21 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> Cache<K, V> for LFUCach
         let mut inner = self.inner.lock().unwrap();
 
         let result = inner.key_value_map.remove(key);
-        if let Some(_) = result {
+        // if let Some(_) = result {
+        //     inner.counter.remove(key);
+        //     inner.freq_map.get_mut(&1).map(|bucket| bucket.remove(key));
+        // }
+
+        if result.is_some() {
             inner.counter.remove(key);
-            inner.freq_map.get_mut(&1).map(|bucket| bucket.remove(key));
+            let freq = *inner.counter.get(key).unwrap_or(&0);
+            if let Some(bucket) = inner.freq_map.get_mut(&freq) {
+                bucket.remove(key);
+                if bucket.is_empty() {
+                    inner.freq_map.remove(&1);
+                    inner.min_freq = 0;
+                }
+            }
         }
         result
     }
