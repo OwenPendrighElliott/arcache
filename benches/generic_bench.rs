@@ -13,6 +13,15 @@ fn bench_all(c: &mut Criterion) {
             "RANDOM",
             Box::new(|| Box::new(RandomReplacementCache::new(100))),
         ),
+        (
+            "TTL",
+            Box::new(|| {
+                Box::new(cachers::TTLCache::<i32, i32>::new(
+                    std::time::Duration::from_secs(1),
+                    100,
+                ))
+            }),
+        ),
     ];
 
     for (label, factory) in cache_factories {

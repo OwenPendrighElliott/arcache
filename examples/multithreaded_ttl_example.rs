@@ -39,8 +39,6 @@ fn main() {
     let num_threads = 10;
     let cache_capacity = 20;
     let ttl_duration = Duration::from_secs(2);
-    let ttl_jitter = Duration::from_millis(10);
-    let background_interval = Duration::from_millis(100);
 
     for _ in 0..repetitions {
         for i in 0..num_users {
@@ -52,12 +50,7 @@ fn main() {
     user_ids.shuffle(&mut random);
 
     // --- Single-threaded execution using TTLCache ---
-    let ttl_cache = TTLCache::<String, UserData>::new(
-        ttl_duration,
-        background_interval,
-        ttl_jitter,
-        cache_capacity,
-    );
+    let ttl_cache = TTLCache::<String, UserData>::new(ttl_duration, cache_capacity);
     let start = Instant::now();
     for user_id in &user_ids {
         let data = get_user_data(user_id, &ttl_cache);
@@ -69,8 +62,6 @@ fn main() {
     // --- Multithreaded execution ---
     let arc_cache = Arc::new(TTLCache::<String, UserData>::new(
         ttl_duration,
-        background_interval,
-        ttl_jitter,
         cache_capacity,
     ));
     let start = Instant::now();
