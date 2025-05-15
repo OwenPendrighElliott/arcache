@@ -1,7 +1,12 @@
 [package]
 name = "cachers"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
+license = "MIT"
+description = "Thread safe cache implementations with a shared trait to make caches interchangeable."
+homepage = "https://github.com/OwenPendrighElliott/cachers"
+repository = "https://github.com/OwenPendrighElliott/cachers"
+readme = "README.md"
 
 [dependencies]
 linked-hash-map = "0.5"

@@ -33,7 +33,7 @@ where
     C: Cache<&'static str, String>,
 {
     cache.set("hello", "world".to_string());
-     if let Some(val) = cache.get(&"hello") {
+    if let Some(val) = cache.get(&"hello") {
         println!("Got: {}", val);
     }
 }
@@ -53,10 +53,13 @@ fn main() {
 + `MRUCache`
 + `TTLCache`
 + `FIFOCache`
++ `LIFOCache`
++ `RandomReplacementCache`
 
-### Yet to be added
+### On the roadmap
 
-+ `ARC`
++ `ARCCache`
++ `LFUTTLCache` (LFU with expiration)
 
 ## Usage
 
