@@ -7,6 +7,8 @@ description = "Thread safe cache implementations with a shared trait to make cac
 homepage = "https://github.com/OwenPendrighElliott/cachers"
 repository = "https://github.com/OwenPendrighElliott/cachers"
 readme = "README.md"
+keywords = ["caching", "cache"]
+categories = ["caching", "data-structures", "algorithms"]
 
 [dependencies]
 linked-hash-map = "0.5"
