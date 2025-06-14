@@ -36,19 +36,17 @@ impl<K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
 /// ```
 /// use arcache::{Cache, FIFOCache};
 ///
-/// fn main() {
-///     let cache = FIFOCache::<&str, String>::new(10);
-///     
-///     let original_value = cache.set("key", "value".to_string());
+/// let cache = FIFOCache::<&str, String>::new(10);
 ///
-///     assert!(original_value.is_none());
-///     
-///     let value = cache.get(&"key");
+/// let original_value = cache.set("key", "value".to_string());
 ///
-///     assert!(value.is_some());
-///     assert_eq!(*value.unwrap(), "value".to_string());
-///     println!("{:?}", cache.stats());
-/// }
+/// assert!(original_value.is_none());
+///     
+/// let value = cache.get(&"key");
+///
+/// assert!(value.is_some());
+/// assert_eq!(*value.unwrap(), "value".to_string());
+/// println!("{:?}", cache.stats());
 /// ```
 pub struct FIFOCache<K: Eq + Hash + Send, V: Send + Sync> {
     inner: Mutex<FIFOCacheInner<K, V>>,

@@ -37,19 +37,17 @@ impl<K: Eq + Hash + Send, V: Send + Sync> RandomReplacementCacheInner<K, V> {
 /// ```
 /// use arcache::{Cache, RandomReplacementCache};
 ///
-/// fn main() {
-///     let cache = RandomReplacementCache::<&str, String>::new(10);
+/// let cache = RandomReplacementCache::<&str, String>::new(10);
 ///     
-///     let original_value = cache.set("key", "value".to_string());
+/// let original_value = cache.set("key", "value".to_string());
 ///
-///     assert!(original_value.is_none());
+/// assert!(original_value.is_none());
 ///     
-///     let value = cache.get(&"key");
+/// let value = cache.get(&"key");
 ///
-///     assert!(value.is_some());
-///     assert_eq!(*value.unwrap(), "value".to_string());
-///     println!("{:?}", cache.stats());
-/// }
+/// assert!(value.is_some());
+/// assert_eq!(*value.unwrap(), "value".to_string());
+/// println!("{:?}", cache.stats());
 /// ```
 pub struct RandomReplacementCache<K: Eq + Hash + Send, V: Send + Sync> {
     inner: Mutex<RandomReplacementCacheInner<K, V>>,
@@ -151,7 +149,7 @@ mod tests {
         assert_eq!(cache.get(&1).map(|v| *v), Some(1));
         cache.set(3, 3);
         assert_eq!(cache.get(&3).map(|v| *v), Some(3));
-        assert_eq!(cache.get(&1).is_none() || cache.get(&2).is_none(), true);
+        assert!(cache.get(&1).is_none() || cache.get(&2).is_none());
         cache.set(4, 4);
         assert_eq!(cache.get(&4).map(|v| *v), Some(4));
     }
@@ -172,6 +170,6 @@ mod tests {
         cache.set(1, 1);
         cache.set(2, 2);
         cache.change_capacity(1);
-        assert_eq!(cache.get(&1).is_none() || cache.get(&2).is_none(), true);
+        assert!(cache.get(&1).is_none() || cache.get(&2).is_none());
     }
 }

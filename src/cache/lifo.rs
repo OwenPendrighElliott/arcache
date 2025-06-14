@@ -36,19 +36,17 @@ impl<K: Eq + Hash + Send, V: Send + Sync> LIFOCacheInner<K, V> {
 /// ```
 /// use arcache::{Cache, LIFOCache};
 ///
-/// fn main() {
-///     let cache = LIFOCache::<&str, String>::new(10);
+/// let cache = LIFOCache::<&str, String>::new(10);
 ///     
-///     let original_value = cache.set("key", "value".to_string());
+/// let original_value = cache.set("key", "value".to_string());
 ///
-///     assert!(original_value.is_none());
+/// assert!(original_value.is_none());
 ///     
-///     let value = cache.get(&"key");
+/// let value = cache.get(&"key");
 ///
-///     assert!(value.is_some());
-///     assert_eq!(*value.unwrap(), "value".to_string());
-///     println!("{:?}", cache.stats());
-/// }
+/// assert!(value.is_some());
+/// assert_eq!(*value.unwrap(), "value".to_string());
+/// println!("{:?}", cache.stats());
 /// ```
 pub struct LIFOCache<K: Eq + Hash + Send, V: Send + Sync> {
     inner: Mutex<LIFOCacheInner<K, V>>,

@@ -33,19 +33,17 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
 /// ```
 /// use arcache::{Cache, MRUCache};
 ///
-/// fn main() {
-///     let cache = MRUCache::<&str, String>::new(10);
+/// let cache = MRUCache::<&str, String>::new(10);
 ///     
-///     let original_value = cache.set("key", "value".to_string());
+/// let original_value = cache.set("key", "value".to_string());
 ///
-///     assert!(original_value.is_none());
+/// assert!(original_value.is_none());
 ///     
-///     let value = cache.get(&"key");
+/// let value = cache.get(&"key");
 ///
-///     assert!(value.is_some());
-///     assert_eq!(*value.unwrap(), "value".to_string());
-///     println!("{:?}", cache.stats());
-/// }
+/// assert!(value.is_some());
+/// assert_eq!(*value.unwrap(), "value".to_string());
+/// println!("{:?}", cache.stats());
 /// ```
 pub struct MRUCache<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     inner: Mutex<MRUCacheInner<K, V>>,

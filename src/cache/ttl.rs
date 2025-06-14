@@ -34,21 +34,19 @@ struct TTLCacheInner<K, V> {
 /// use arcache::{Cache, TTLCache};
 /// use std::time::Duration;
 ///
-/// fn main() {
-///     let ttl = Duration::from_secs(1);
-///     let capacity = 10;
-///     let cache = TTLCache::<&str, String>::new(ttl, capacity);
+/// let ttl = Duration::from_secs(1);
+/// let capacity = 10;
+/// let cache = TTLCache::<&str, String>::new(ttl, capacity);
 ///     
-///     let original_value = cache.set("key", "value".to_string());
+/// let original_value = cache.set("key", "value".to_string());
 ///
-///     assert!(original_value.is_none());
+/// assert!(original_value.is_none());
 ///     
-///     let value = cache.get(&"key");
+/// let value = cache.get(&"key");
 ///
-///     assert!(value.is_some());
-///     assert_eq!(*value.unwrap(), "value".to_string());
-///     println!("{:?}", cache.stats());
-/// }
+/// assert!(value.is_some());
+/// assert_eq!(*value.unwrap(), "value".to_string());
+/// println!("{:?}", cache.stats());
 /// ```
 pub struct TTLCache<K: Eq + Hash + Clone + Send + 'static, V: Send + Sync + 'static> {
     inner: Arc<Mutex<TTLCacheInner<K, V>>>,

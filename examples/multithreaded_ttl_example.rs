@@ -67,7 +67,7 @@ fn main() {
     let start = Instant::now();
     let mut handles = Vec::new();
 
-    let chunk_size = (user_ids.len() + num_threads - 1) / num_threads;
+    let chunk_size = user_ids.len().div_ceil(num_threads);
     for chunk in user_ids.chunks(chunk_size) {
         let cache_clone = Arc::clone(&arc_cache);
         let chunk: Vec<String> = chunk.to_vec();

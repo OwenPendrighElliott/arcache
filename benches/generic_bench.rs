@@ -1,9 +1,12 @@
 use arcache::{Cache, FIFOCache, LFUCache, LIFOCache, LRUCache, MRUCache, RandomReplacementCache};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
+// cache factory type
+type BenchCacheFactory = (&'static str, Box<dyn Fn() -> Box<dyn Cache<i32, i32>>>);
+
 fn bench_all(c: &mut Criterion) {
     // A list of (label, factory) pairs, where 'factory' creates a fresh cache each time.
-    let cache_factories: Vec<(&'static str, Box<dyn Fn() -> Box<dyn Cache<i32, i32>>>)> = vec![
+    let cache_factories: Vec<BenchCacheFactory> = vec![
         ("LRU", Box::new(|| Box::new(LRUCache::new(100)))),
         ("MRU", Box::new(|| Box::new(MRUCache::new(100)))),
         ("FIFO", Box::new(|| Box::new(FIFOCache::new(100)))),

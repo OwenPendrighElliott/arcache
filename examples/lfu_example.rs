@@ -33,14 +33,14 @@ fn main() {
     // fetch product 1 five times
     for _ in 0..5 {
         let id = "1";
-        let product = get_product(&id, &cache);
+        let product = get_product(id, &cache);
         println!("Product: {:?}", product);
     }
 
     // fetch product 2 three times
     for _ in 0..3 {
         let id = "2";
-        let product = get_product(&id, &cache);
+        let product = get_product(id, &cache);
         println!("Product: {:?}", product);
     }
 

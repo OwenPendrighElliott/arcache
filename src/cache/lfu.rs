@@ -19,7 +19,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
     /// Create a new LFUCacheInner with the given capacity, internally capacity is reserved for the necessary data structures.
     fn new(capacity: u64) -> Self {
         LFUCacheInner {
-            capacity: capacity,
+            capacity,
             key_value_map: HashMap::with_capacity(capacity as usize),
             counter: HashMap::with_capacity(capacity as usize),
             freq_map: HashMap::new(),
@@ -35,7 +35,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
         *self.counter.entry(key.clone()).or_default() += 1;
         self.freq_map.entry(freq).or_default().remove(key);
 
-        if self.freq_map.get(&freq).is_none() {
+        if !self.freq_map.contains_key(&freq) {
             if freq == self.min_freq {
                 self.min_freq += 1;
             }
@@ -71,19 +71,17 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
 /// ```
 /// use arcache::{Cache, LFUCache};
 ///
-/// fn main() {
-///     let cache = LFUCache::<&str, String>::new(10);
+/// let cache = LFUCache::<&str, String>::new(10);
 ///     
-///     let original_value = cache.set("key", "value".to_string());
+/// let original_value = cache.set("key", "value".to_string());
 ///
-///     assert!(original_value.is_none());
+/// assert!(original_value.is_none());
 ///     
-///     let value = cache.get(&"key");
+/// let value = cache.get(&"key");
 ///
-///     assert!(value.is_some());
-///     assert_eq!(*value.unwrap(), "value".to_string());
-///     println!("{:?}", cache.stats());
-/// }
+/// assert!(value.is_some());
+/// assert_eq!(*value.unwrap(), "value".to_string());
+/// println!("{:?}", cache.stats());
 /// ```
 pub struct LFUCache<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> {
     inner: Mutex<LFUCacheInner<K, V>>,

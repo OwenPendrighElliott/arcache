@@ -1,6 +1,9 @@
 # arcache
 
+[![Docs.rs](https://docs.rs/arcache/badge.svg)](https://docs.rs/arcache)
+[![Crates.io](https://img.shields.io/crates/v/arcache.svg)](https://crates.io/crates/arcache)
 ![Test Status](https://github.com/OwenPendrighElliott/arcache/actions/workflows/tests.yml/badge.svg)
+[![License](https://img.shields.io/crates/l/arcache.svg)](https://crates.io/crates/arcache)
 
 A crate which implements a variety of caches with different eviction policies. All cache implementations are thread-safe and can be used in a multi-threaded environment. Cache implementations all share the `Cache` trait which means that they are interchangeable once instantiated.
 
@@ -70,8 +73,12 @@ fn main() {
 See `/examples` for example usage. You can run these like so:
 
 ```bash
-cargo run --example lru_example --release
+cargo run --example fifo_example --release
 cargo run --example lfu_example --release
+cargo run --example lru_example --release
+cargo run --example lru_fib_timed_example --release
+cargo run --example multithreaded_lru_example --release
+cargo run --example multithreaded_ttl_example --release
 ```
 
-etc.
+To add `arcache` to your project run `cargo add arcache`.
