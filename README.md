@@ -1,8 +1,10 @@
-# cache.rs
+# arcache
 
 ![Test Status](https://github.com/OwenPendrighElliott/arcache/actions/workflows/tests.yml/badge.svg)
 
 A crate which implements a variety of caches with different eviction policies. All cache implementations are thread-safe and can be used in a multi-threaded environment. Cache implementations all share the `Cache` trait which means that they are interchangeable once instantiated.
+
+The cache store values in an `Arc` (hence `arccache`) so that they can be shared between threads without needing to clone the value. Caches all implement an internal mutability pattern to make them easy to use in multi-threaded applications.
 
 ```rust
 use arcache::{Cache, LRUCache};
