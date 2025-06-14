@@ -1,5 +1,7 @@
 # cache.rs
 
+![Test Status](https://github.com/OwenPendrighElliott/cachers/actions/workflows/tests.yml/badge.svg)
+
 A crate which implements a variety of caches with different eviction policies. All cache implementations are thread-safe and can be used in a multi-threaded environment. Cache implementations all share the `Cache` trait which means that they are completely interchangeable.
 
 ```rust
