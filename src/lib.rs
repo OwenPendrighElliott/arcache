@@ -8,7 +8,6 @@ pub use crate::cache::random_replacement::RandomReplacementCache;
 pub use crate::cache::ttl::TTLCache;
 pub use crate::cache::Cache;
 
-
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
 pub struct _ReadmeDoctests;

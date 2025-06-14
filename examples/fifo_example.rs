@@ -1,6 +1,6 @@
 use cachers::{Cache, FIFOCache};
 
-fn fifo_fib(n: u64, cache: &mut FIFOCache<u64, u64>) -> u64 {
+fn fifo_fib(n: u64, cache: &FIFOCache<u64, u64>) -> u64 {
     if n == 0 {
         return 0;
     }
@@ -18,11 +18,11 @@ fn fifo_fib(n: u64, cache: &mut FIFOCache<u64, u64>) -> u64 {
 }
 
 fn main() {
-    let mut cache = FIFOCache::new(10);
-    println!("{}", fifo_fib(10, &mut cache));
+    let cache = FIFOCache::new(10);
+    println!("{}", fifo_fib(10, &cache));
     println!("{:?}", cache.stats());
-    println!("{}", fifo_fib(10, &mut cache));
+    println!("{}", fifo_fib(10, &cache));
     println!("{:?}", cache.stats());
-    println!("{}", fifo_fib(20, &mut cache));
+    println!("{}", fifo_fib(20, &cache));
     println!("{:?}", cache.stats());
 }

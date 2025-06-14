@@ -2,7 +2,7 @@ use cachers::{Cache, LRUCache};
 use std::time::Instant;
 
 // Fibonacci with LRU caching
-fn lru_fib(n: u64, cache: &mut LRUCache<u64, u64>) -> u64 {
+fn lru_fib(n: u64, cache: &LRUCache<u64, u64>) -> u64 {
     if n == 0 {
         return 0;
     }
@@ -43,9 +43,9 @@ fn main() {
     );
 
     // Measure LRU cached Fibonacci time
-    let mut cache = LRUCache::new(100);
+    let cache = LRUCache::new(100);
     let start = Instant::now();
-    let result_cached = lru_fib(n, &mut cache);
+    let result_cached = lru_fib(n, &cache);
     let duration_cached = start.elapsed();
     println!(
         "Cached Fibonacci({}) = {} (Time: {:?})",
