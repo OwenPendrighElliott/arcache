@@ -35,7 +35,7 @@ impl<K: Eq + Hash + Send, V: Send + Sync> RandomReplacementCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, RandomReplacementCache};
+/// use arcache::{Cache, RandomReplacementCache};
 ///
 /// fn main() {
 ///     let cache = RandomReplacementCache::<&str, String>::new(10);

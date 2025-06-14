@@ -1,4 +1,4 @@
-use cachers::{Cache, LRUCache};
+use arcache::{Cache, LRUCache};
 use std::time::Instant;
 
 // Fibonacci with LRU caching

@@ -34,7 +34,7 @@ impl<K: Eq + Hash + Send, V: Send + Sync> FIFOCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, FIFOCache};
+/// use arcache::{Cache, FIFOCache};
 ///
 /// fn main() {
 ///     let cache = FIFOCache::<&str, String>::new(10);

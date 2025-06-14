@@ -31,7 +31,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LRUCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, LRUCache};
+/// use arcache::{Cache, LRUCache};
 ///
 /// fn main() {
 ///     let cache = LRUCache::<&str, String>::new(10);

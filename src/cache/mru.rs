@@ -31,7 +31,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> MRUCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, MRUCache};
+/// use arcache::{Cache, MRUCache};
 ///
 /// fn main() {
 ///     let cache = MRUCache::<&str, String>::new(10);

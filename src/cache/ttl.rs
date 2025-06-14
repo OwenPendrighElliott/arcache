@@ -31,7 +31,7 @@ struct TTLCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, TTLCache};
+/// use arcache::{Cache, TTLCache};
 /// use std::time::Duration;
 ///
 /// fn main() {

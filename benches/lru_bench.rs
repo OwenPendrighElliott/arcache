@@ -1,4 +1,4 @@
-use cachers::{Cache, LRUCache};
+use arcache::{Cache, LRUCache};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn bench_lru_cache(c: &mut Criterion) {

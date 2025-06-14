@@ -15,7 +15,7 @@ pub struct CacheStats {
 /// The cache trait is useful for defining generic functions that can work with any cache implementation
 /// Example:
 /// ```
-/// use cachers::{Cache, LFUCache, LRUCache};
+/// use arcache::{Cache, LFUCache, LRUCache};
 /// use std::{hash::Hash, sync::Arc};
 ///
 /// fn do_something<C>(cache: C)

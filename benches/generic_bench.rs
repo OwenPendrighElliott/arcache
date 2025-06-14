@@ -1,4 +1,4 @@
-use cachers::{Cache, FIFOCache, LFUCache, LIFOCache, LRUCache, MRUCache, RandomReplacementCache};
+use arcache::{Cache, FIFOCache, LFUCache, LIFOCache, LRUCache, MRUCache, RandomReplacementCache};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn bench_all(c: &mut Criterion) {
@@ -16,7 +16,7 @@ fn bench_all(c: &mut Criterion) {
         (
             "TTL",
             Box::new(|| {
-                Box::new(cachers::TTLCache::<i32, i32>::new(
+                Box::new(arcache::TTLCache::<i32, i32>::new(
                     std::time::Duration::from_secs(1),
                     100,
                 ))

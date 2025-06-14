@@ -1,4 +1,4 @@
-use cachers::{Cache, LFUCache};
+use arcache::{Cache, LFUCache};
 use std::thread;
 
 #[derive(Debug, Clone)]

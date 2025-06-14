@@ -1,4 +1,4 @@
-use cachers::{Cache, LRUCache};
+use arcache::{Cache, LRUCache};
 use rand::rng;
 use rand::{seq::SliceRandom, Rng};
 use std::sync::Arc;

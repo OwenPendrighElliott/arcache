@@ -1,4 +1,4 @@
-use cachers::{Cache, LRUCache};
+use arcache::{Cache, LRUCache};
 
 fn lru_fib(n: u64, cache: &LRUCache<u64, u64>) -> u64 {
     if n == 0 {

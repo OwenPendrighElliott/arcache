@@ -34,7 +34,7 @@ impl<K: Eq + Hash + Send, V: Send + Sync> LIFOCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, LIFOCache};
+/// use arcache::{Cache, LIFOCache};
 ///
 /// fn main() {
 ///     let cache = LIFOCache::<&str, String>::new(10);

@@ -1,11 +1,11 @@
 # cache.rs
 
-![Test Status](https://github.com/OwenPendrighElliott/cachers/actions/workflows/tests.yml/badge.svg)
+![Test Status](https://github.com/OwenPendrighElliott/arcache/actions/workflows/tests.yml/badge.svg)
 
 A crate which implements a variety of caches with different eviction policies. All cache implementations are thread-safe and can be used in a multi-threaded environment. Cache implementations all share the `Cache` trait which means that they are interchangeable once instantiated.
 
 ```rust
-use cachers::{Cache, LRUCache};
+use arcache::{Cache, LRUCache};
 
 fn main() {
     let cache = LRUCache::<&str, String>::new(10); // mutability is internally handled so you can use `let` instead of `let mut`
@@ -27,7 +27,7 @@ fn main() {
 The `Cache` trait lets you write functions with generic signatures and swap cache implementations, this is useful if you want to uses multiple cache types with the same code.
 
 ```rust
-use cachers::{Cache, LFUCache, LRUCache};
+use arcache::{Cache, LFUCache, LRUCache};
 use std::{hash::Hash, sync::Arc};
 
 fn do_something<C>(cache: C)

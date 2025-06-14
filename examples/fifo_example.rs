@@ -1,4 +1,4 @@
-use cachers::{Cache, FIFOCache};
+use arcache::{Cache, FIFOCache};
 
 fn fifo_fib(n: u64, cache: &FIFOCache<u64, u64>) -> u64 {
     if n == 0 {

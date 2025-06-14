@@ -69,7 +69,7 @@ impl<K: Eq + Hash + Clone + Sync + Send, V: Send + Sync> LFUCacheInner<K, V> {
 ///
 /// Example:
 /// ```
-/// use cachers::{Cache, LFUCache};
+/// use arcache::{Cache, LFUCache};
 ///
 /// fn main() {
 ///     let cache = LFUCache::<&str, String>::new(10);
